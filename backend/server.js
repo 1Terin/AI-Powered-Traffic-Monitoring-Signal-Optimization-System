@@ -6,6 +6,9 @@ const dotenv = require('dotenv');
 const { Server } = require('socket.io');
 const TrafficEvent = require('./src/models/TrafficEvent');
 const startMockTrafficStream = require('./src/mockDataGenerator');
+const startMqttBridge = require('./src/mqttBridge');
+const { startSimulators } = require('./src/sensorSimulators');
+const { initPostgres } = require('./src/postgresClient');
 
 dotenv.config();
 const app = express();
@@ -82,7 +85,28 @@ async function start() {
     console.log(`Backend running on http://localhost:${PORT}`);
   });
 
+  // start existing mock stream saving to MongoDB + Socket.IO
   startMockTrafficStream(io, TrafficEvent);
+
+  // start MQTT bridge to accept sensor data via MQTT and publish to Socket.IO
+  try {
+    startMqttBridge(io, TrafficEvent);
+  } catch (err) {
+    console.warn('MQTT bridge failed to start', err.message || err);
+  }
+
+  // optionally run local sensor simulators (publishes MQTT messages)
+  if (process.env.SIMULATE_SENSORS === '1') {
+    startSimulators();
+  }
+
+  // initialize Postgres connection (optional)
+  try {
+    const { sequelize } = initPostgres();
+    sequelize.authenticate().then(() => console.log('Postgres connected')).catch(() => {});
+  } catch (err) {
+    // ignore if not configured
+  }
 }
 
 start().catch((error) => {

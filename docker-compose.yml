@@ -10,6 +10,27 @@ services:
     ports:
       - 27017:27017
 
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trafficdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    ports:
+      - 1883:1883
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_config:/mosquitto/config
+
   backend:
     build:
       context: .
@@ -36,3 +57,6 @@ services:
 
 volumes:
   mongo_data:
+  postgres_data:
+  mosquitto_data:
+  mosquitto_config:
