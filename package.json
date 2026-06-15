@@ -1,0 +1,13 @@
+{
+  "name": "traffic-monitoring-system",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm install && npm run dev",
+    "dev:frontend": "cd frontend && npm install && npm run dev",
+    "start:backend": "cd backend && npm install && npm start",
+    "start:frontend": "cd frontend && npm install && npm run preview",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  }
+}
