@@ -1,0 +1,4 @@
+apiVersion: v2
+name: traffic-system
+description: Helm chart for traffic monitoring components (backend + frontend)
+version: 0.1.0

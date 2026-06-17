@@ -54,6 +54,28 @@ ML notes:
 - `ml/lstm_train.py` is a starter script for time-series forecasting (requires TensorFlow).
 - `ml/yolo_inference.py` is a placeholder for integrating a YOLO runtime.
 
+Extended ML & Ops notes:
+
+- YOLO inference: use `ml/yolo_inference.py`. Install dependencies from `ml/requirements-ml.txt` and run:
+
+```bash
+python ml/yolo_inference.py --source rtsp://<camera> --model yolov8n.pt --mqtt mqtt://localhost:1883 --show
+```
+
+- LSTM training: improved trainer at `ml/lstm_train.py`. Example:
+
+```bash
+python ml/lstm_train.py --data data_import/datasets/smart_traffic_management.csv --seq-len 12 --epochs 20
+```
+
+- Reinforcement Learning: train a PPO agent with `ml/train_rl.py`:
+
+```bash
+python ml/train_rl.py --timesteps 50000
+```
+
+- Monitoring: Prometheus is available at `http://localhost:9090` and Grafana at `http://localhost:3000` when running `npm run docker:up`.
+
 
 ## Dataset References
 

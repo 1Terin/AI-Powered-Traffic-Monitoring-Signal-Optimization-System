@@ -1,0 +1,10 @@
+backend:
+  image: traffic-backend:latest
+  replicaCount: 1
+frontend:
+  image: traffic-frontend:latest
+  replicaCount: 1
+postgres:
+  enabled: true
+mqtt:
+  enabled: true

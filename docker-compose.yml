@@ -29,7 +29,7 @@ services:
       - 1883:1883
     volumes:
       - mosquitto_data:/mosquitto/data
-      - mosquitto_config:/mosquitto/config
+      - ./mosquitto/config:/mosquitto/config
 
   backend:
     build:
@@ -38,10 +38,12 @@ services:
     environment:
       - NODE_ENV=production
       - MONGO_URI=mongodb://mongo:27017/trafficdb
+      - MQTT_BROKER=mqtt://mqtt:1883
       - PORT=4000
     ports:
       - 4000:4000
     depends_on:
+      - mqtt
       - mongo
 
   frontend:
@@ -54,6 +56,22 @@ services:
       - 4173:4173
     depends_on:
       - backend
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 9090:9090
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
 
 volumes:
   mongo_data:

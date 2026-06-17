@@ -9,6 +9,7 @@ const startMockTrafficStream = require('./src/mockDataGenerator');
 const startMqttBridge = require('./src/mqttBridge');
 const { startSimulators } = require('./src/sensorSimulators');
 const { initPostgres } = require('./src/postgresClient');
+const { router: deviceRouter, verifyDeviceToken } = require('./src/auth');
 
 dotenv.config();
 const app = express();
@@ -44,7 +45,7 @@ app.get('/api/traffic/summary', async (req, res) => {
   res.json(summary[0] || { averageSpeed: 0, averagePollution: 0, totalVehicles: 0 });
 });
 
-app.post('/api/traffic', async (req, res) => {
+app.post('/api/traffic', verifyDeviceToken, async (req, res) => {
   const payload = req.body;
   const event = new TrafficEvent({
     intersection: payload.intersection || 'intersection-1',
@@ -60,12 +61,26 @@ app.post('/api/traffic', async (req, res) => {
   res.status(201).json(event);
 });
 
+// device registration and auth
+app.use('/api/devices', deviceRouter);
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
   }
+});
+
+// Prometheus metrics
+const client = require('prom-client');
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics();
+const httpRequestCounter = new client.Counter({ name: 'http_requests_total', help: 'Total HTTP requests' });
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 io.on('connection', (socket) => {
