@@ -6,3 +6,56 @@ backend/node_modules/
 .DS_Store
 dist/
 .vite/
+
+data_import/datasets/
+*.pt
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+env/
+.venv/
+.python-version
+pip-wheel-metadata/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Testing / lint
+.pytest_cache/
+.mypy_cache/
+
+# ML artifacts & checkpoints
+*.h5
+*.ckpt
+*.pth
+*.onnx
+*.tflite
+runs/
+wandb/
+checkpoints/
+models/
+weights/
+
+# Logs & local DBs
+logs/
+*.sqlite
+*.db
+Thumbs.db
+
+# Caches / temp
+.cache/
+tmp/
+temp/
+
+# Docker overrides
+docker-compose.override.yml

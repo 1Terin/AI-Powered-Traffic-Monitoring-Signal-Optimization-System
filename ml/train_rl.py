@@ -1,9 +1,8 @@
 """
-Train a PPO agent using Stable-Baselines3 on the TrafficSignalEnv provided in rl_signal_opt.py
-Requires: stable-baselines3, gym, torch
+Train a PPO agent using Stable Baselines 3 on the TrafficSignalEnv provided in rl_signal_opt.py
+Requires: stable-baselines3, gymnasium, torch
 """
 import argparse
-import os
 
 try:
     from stable_baselines3 import PPO
@@ -25,7 +24,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if PPO is None:
-        print('stable-baselines3 not installed. Install with `pip install stable-baselines3`')
+        print('stable-baselines3 not installed. Install with `pip install stable-baselines3 gymnasium`')
         exit(1)
 
     env = DummyVecEnv([make_env])

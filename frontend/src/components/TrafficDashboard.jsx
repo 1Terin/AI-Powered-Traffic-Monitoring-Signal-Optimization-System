@@ -10,6 +10,7 @@ function formatNumber(value) {
 
 export default function TrafficDashboard() {
   const [summary, setSummary] = useState({ averageSpeed: 0, averagePollution: 0, totalVehicles: 0 });
+  const [latestEvent, setLatestEvent] = useState({ intersection: '-', signalPhase: '-', congestionLevel: '-' });
   const [history, setHistory] = useState([]);
   const [status, setStatus] = useState('Connecting to live feed...');
 
@@ -36,6 +37,11 @@ export default function TrafficDashboard() {
       setHistory((current) => {
         const next = [...current, event].slice(-20);
         return next;
+      });
+      setLatestEvent({
+        intersection: event.intersection,
+        signalPhase: event.signalPhase,
+        congestionLevel: event.congestionLevel
       });
       setSummary((previous) => ({
         averageSpeed: (previous.averageSpeed + event.averageSpeed) / 2,
@@ -78,6 +84,20 @@ export default function TrafficDashboard() {
             <span className="summary-label">Air quality index</span>
             <strong>{formatNumber(summary.averagePollution)}</strong>
           </div>
+        </div>
+      </div>
+      <div className="details-grid">
+        <div className="summary-card">
+          <span className="summary-label">Intersection</span>
+          <strong>{latestEvent.intersection}</strong>
+        </div>
+        <div className="summary-card">
+          <span className="summary-label">Signal phase</span>
+          <strong>{latestEvent.signalPhase}</strong>
+        </div>
+        <div className="summary-card">
+          <span className="summary-label">Congestion</span>
+          <strong>{latestEvent.congestionLevel}</strong>
         </div>
       </div>
       <TrafficCharts data={chartData} />
