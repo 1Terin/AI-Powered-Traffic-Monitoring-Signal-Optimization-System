@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   mongo:
     image: mongo:6.0
@@ -40,11 +39,14 @@ services:
       - MONGO_URI=mongodb://mongo:27017/trafficdb
       - MQTT_BROKER=mqtt://mqtt:1883
       - PORT=4000
+      - INFERENCE_URL=http://inference:5001
     ports:
       - 4000:4000
     depends_on:
       - mqtt
       - mongo
+      - inference
+    restart: unless-stopped
 
   frontend:
     build:
@@ -56,6 +58,17 @@ services:
       - 4173:4173
     depends_on:
       - backend
+    restart: unless-stopped
+
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile.inference
+    environment:
+      - PORT=5001
+    ports:
+      - 5001:5001
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest

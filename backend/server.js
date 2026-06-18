@@ -61,6 +61,22 @@ app.post('/api/traffic', verifyDeviceToken, async (req, res) => {
   res.status(201).json(event);
 });
 
+app.post('/api/predict', async (req, res) => {
+  const inferenceUrl = process.env.INFERENCE_URL || 'http://inference:5001';
+  try {
+    const response = await fetch(`${inferenceUrl}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Predict proxy error:', error.message || error);
+    return res.status(500).json({ error: 'Prediction service unavailable' });
+  }
+});
+
 // device registration and auth
 app.use('/api/devices', deviceRouter);
 

@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+WORKDIR /usr/src/app
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+COPY ml/requirements-inference.txt ./
+RUN python -m pip install --upgrade pip && python -m pip install --no-cache-dir -r requirements-inference.txt
+COPY ml/infer_api.py ./
+COPY lstm_traffic_model.h5 ./
+EXPOSE 5001
+CMD ["python", "infer_api.py"]

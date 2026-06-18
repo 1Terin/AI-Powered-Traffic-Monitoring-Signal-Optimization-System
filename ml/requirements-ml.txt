@@ -8,3 +8,5 @@ pandas
 numpy
 stable-baselines3
 gymnasium
+flask
+flask-cors

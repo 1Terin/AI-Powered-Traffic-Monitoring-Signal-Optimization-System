@@ -12,6 +12,7 @@ export default function TrafficDashboard() {
   const [summary, setSummary] = useState({ averageSpeed: 0, averagePollution: 0, totalVehicles: 0 });
   const [latestEvent, setLatestEvent] = useState({ intersection: '-', signalPhase: '-', congestionLevel: '-' });
   const [history, setHistory] = useState([]);
+  const [forecast, setForecast] = useState(null);
   const [status, setStatus] = useState('Connecting to live feed...');
 
   useEffect(() => {
@@ -36,18 +37,37 @@ export default function TrafficDashboard() {
     socket.on('trafficUpdate', (event) => {
       setHistory((current) => {
         const next = [...current, event].slice(-20);
+
+        setLatestEvent({
+          intersection: event.intersection,
+          signalPhase: event.signalPhase,
+          congestionLevel: event.congestionLevel
+        });
+
+        setSummary((previous) => ({
+          averageSpeed: (previous.averageSpeed + event.averageSpeed) / 2,
+          averagePollution: (previous.averagePollution + event.pollutionIndex) / 2,
+          totalVehicles: previous.totalVehicles + event.vehicleCount
+        }));
+
+        (async () => {
+          try {
+            const seqLen = 12;
+            const recent = next.slice(-seqLen).map((i) => i.vehicleCount ?? 0);
+            const resp = await fetch(`${API_BASE_URL}/api/predict`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ window: recent })
+            });
+            const json = await resp.json();
+            if (json && typeof json.prediction !== 'undefined') setForecast(json.prediction);
+          } catch (err) {
+            // ignore forecast errors silently
+          }
+        })();
+
         return next;
       });
-      setLatestEvent({
-        intersection: event.intersection,
-        signalPhase: event.signalPhase,
-        congestionLevel: event.congestionLevel
-      });
-      setSummary((previous) => ({
-        averageSpeed: (previous.averageSpeed + event.averageSpeed) / 2,
-        averagePollution: (previous.averagePollution + event.pollutionIndex) / 2,
-        totalVehicles: previous.totalVehicles + event.vehicleCount
-      }));
     });
 
     return () => {
@@ -98,6 +118,10 @@ export default function TrafficDashboard() {
         <div className="summary-card">
           <span className="summary-label">Congestion</span>
           <strong>{latestEvent.congestionLevel}</strong>
+        </div>
+        <div className="summary-card">
+          <span className="summary-label">Forecast</span>
+          <strong>{forecast !== null ? formatNumber(forecast) : 'loading...'}</strong>
         </div>
       </div>
       <TrafficCharts data={chartData} />

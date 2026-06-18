@@ -16,12 +16,24 @@ This repository contains a scaffolded full-stack traffic monitoring system with:
 
 ## Local development
 
-1. Install dependencies for backend and frontend:
+1. Install dependencies and run locally:
    - `npm run dev:backend`
    - `npm run dev:frontend`
 
-2. Start infrastructure with Docker:
-   - `npm run docker:up`
+2. Start the app stack with Docker Compose:
+   - `docker compose up -d backend frontend inference`
+   - `docker compose down`
+
+3. Start monitoring services (optional):
+   - `docker compose up -d prometheus grafana`
+
+## Local URLs
+
+- Frontend dashboard: `http://localhost:4173/`
+- Backend health: `http://localhost:4000/api/health`
+- Inference health: `http://localhost:5001/health`
+- Prometheus: `http://localhost:9090` (optional)
+- Grafana: `http://localhost:3000` (optional)
 
 ## Architecture
 
@@ -40,10 +52,27 @@ Additional components added:
 Quick run (local with Docker):
 
 ```bash
-# start services (Mongo, Postgres, MQTT, backend, frontend)
+# start services (Mongo, Postgres, MQTT, backend, frontend, inference) (no logs)
+docker compose up -d backend frontend inference
+
+# for everything (including logs)
 npm run docker:up
 
-# to enable simulated sensors, set env var before starting backend (if running directly):
+# stop the app stack
+docker compose down
+```
+
+Then open the dashboard at:
+
+- `http://localhost:4173/`
+
+Optional monitoring:
+```bash
+docker compose up -d prometheus grafana
+```
+
+To enable simulated sensors when running backend locally:
+```powershell
 setx SIMULATE_SENSORS 1
 cd backend && npm run dev
 ```
@@ -74,7 +103,24 @@ python ml/lstm_train.py --data data_import/datasets/smart_traffic_management.csv
 python ml/train_rl.py --timesteps 50000
 ```
 
-- Monitoring: Prometheus is available at `http://localhost:9090` and Grafana at `http://localhost:3000` when running `npm run docker:up`.
+- Monitoring: Prometheus is available at `http://localhost:9090` and Grafana at `http://localhost:3000` when running `docker compose up -d prometheus grafana`.
+- Local stack: use `docker compose up -d backend frontend inference` to start the app, inference API, and backend together.
+
+Forecast panel and inference API
+
+- A simple forecast panel in the dashboard can display LSTM predictions for short-term vehicle counts.
+- A lightweight Flask inference server is provided at `ml/infer_api.py`. It will load a Keras `.h5` model if present at `ml/lstm_traffic_model.h5` and expose a `/predict` endpoint (POST) that accepts JSON `{"window": [v1, v2, ...]}` and returns `{"prediction": <float>}`.
+
+To run the inference API locally:
+
+```bash
+python -m pip install -r ml/requirements-ml.txt
+python ml/infer_api.py
+```
+
+Notes:
+- If no trained model is present, the inference server returns a simple fallback (last observed value) so the dashboard still shows a forecast value.
+- The frontend calls `http://localhost:5001/predict` by default; ensure the inference server is running and reachable when using the forecast panel.
 
 
 ## Dataset References
