@@ -40,7 +40,15 @@ def health():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    payload = request.get_json() or {}
+    try:
+        payload = request.get_json(force=False, silent=False) or {}
+    except Exception as e:
+        raw = request.get_data(as_text=True)
+        print('JSON parse error on /predict:', e)
+        print('Request headers:', dict(request.headers))
+        print('Raw body:', raw)
+        return jsonify({'error': 'invalid json', 'detail': str(e)}), 400
+
     window = payload.get('window')
     if window is None:
         return jsonify({'error': 'window missing'}), 400

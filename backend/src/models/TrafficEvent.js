@@ -1,42 +1,30 @@
 const mongoose = require('mongoose');
 
 const trafficEventSchema = new mongoose.Schema({
-  timestamp: {
-    type: Date,
-    default: () => new Date()
-  },
-  intersection: {
-    type: String,
-    required: true,
-    default: 'intersection-1'
-  },
-  vehicleCount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  averageSpeed: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  pollutionIndex: {
-    type: Number,
-    required: true,
-    default: 0
-  },
+  intersection: { type: String, required: true, default: 'intersection-1' },
+  vehicleCount: { type: Number, default: 0 },
+  averageSpeed: { type: Number, default: 0 },
+  pollutionIndex: { type: Number, default: 0 },
   signalPhase: {
     type: String,
-    required: true,
     enum: ['green', 'yellow', 'red'],
     default: 'green'
   },
   congestionLevel: {
     type: String,
-    required: true,
     enum: ['low', 'moderate', 'high'],
     default: 'moderate'
-  }
+  },
+  sensorType: {
+    type: String,
+    enum: ['inductive_loop', 'radar', 'air_quality', 'camera', 'aggregated', 'unknown'],
+    default: 'aggregated'
+  },
+  source: { type: String, default: 'mqtt' },
+  timestamp: { type: Date, default: Date.now }
 });
+
+trafficEventSchema.index({ timestamp: -1 });
+trafficEventSchema.index({ intersection: 1, timestamp: -1 });
 
 module.exports = mongoose.model('TrafficEvent', trafficEventSchema);

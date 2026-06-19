@@ -18,7 +18,9 @@ module.exports = function startMockTrafficStream(io, TrafficEvent) {
       averageSpeed: randomBetween(18, 65),
       pollutionIndex: randomBetween(30, 95),
       signalPhase: randomElement(signalPhases),
-      congestionLevel: randomElement(congestionLevels)
+      congestionLevel: randomElement(congestionLevels),
+      sensorType: 'aggregated',
+      source: 'mock'
     });
 
     await event.save();
@@ -30,7 +32,9 @@ module.exports = function startMockTrafficStream(io, TrafficEvent) {
       averageSpeed: event.averageSpeed,
       pollutionIndex: event.pollutionIndex,
       signalPhase: event.signalPhase,
-      congestionLevel: event.congestionLevel
+      congestionLevel: event.congestionLevel,
+      sensorType: event.sensorType || 'aggregated',
+      source: event.source || 'mock'
     });
   }, 5000);
 };

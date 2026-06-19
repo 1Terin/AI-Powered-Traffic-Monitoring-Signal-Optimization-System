@@ -40,6 +40,7 @@ services:
       - MQTT_BROKER=mqtt://mqtt:1883
       - PORT=4000
       - INFERENCE_URL=http://inference:5001
+      - SIMULATE_SENSORS=1
     ports:
       - 4000:4000
     depends_on:
@@ -69,6 +70,27 @@ services:
     ports:
       - 5001:5001
     restart: unless-stopped
+
+  yolo:
+    build:
+      context: .
+      dockerfile: Dockerfile.yolo
+    environment:
+      - MQTT_BROKER=mqtt://mqtt:1883
+    depends_on:
+      - mqtt
+    restart: on-failure
+
+  rl_trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.rl
+    environment:
+      - MQTT_BROKER=mqtt://mqtt:1883
+    depends_on:
+      - backend
+      - mqtt
+    restart: on-failure
 
   prometheus:
     image: prom/prometheus:latest

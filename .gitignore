@@ -10,6 +10,9 @@ dist/
 data_import/datasets/
 *.pt
 
+# Project local payloads
+tmp_payload.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -59,3 +62,7 @@ temp/
 
 # Docker overrides
 docker-compose.override.yml
+
+# GitHub and attributes
+.gitattributes
+.github/

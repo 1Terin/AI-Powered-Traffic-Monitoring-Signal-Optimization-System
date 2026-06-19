@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 import TrafficCharts from './TrafficCharts';
+import CameraDetectionsPanel from './CameraDetectionsPanel';
+import IntersectionMap from './IntersectionMap';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
@@ -8,25 +10,42 @@ function formatNumber(value) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
 
+function formatSensorType(value) {
+  if (!value) return 'unknown';
+  return value.replace(/_/g, ' ');
+}
+
 export default function TrafficDashboard() {
   const [summary, setSummary] = useState({ averageSpeed: 0, averagePollution: 0, totalVehicles: 0 });
-  const [latestEvent, setLatestEvent] = useState({ intersection: '-', signalPhase: '-', congestionLevel: '-' });
+  const [latestEvent, setLatestEvent] = useState({
+    intersection: '-',
+    signalPhase: '-',
+    congestionLevel: '-',
+    sensorType: '-'
+  });
   const [history, setHistory] = useState([]);
+  const [detections, setDetections] = useState([]);
+  const [signals, setSignals] = useState({});
   const [forecast, setForecast] = useState(null);
   const [status, setStatus] = useState('Connecting to live feed...');
 
   useEffect(() => {
-    async function loadSummary() {
+    async function loadInitialData() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/traffic/summary`);
-        const data = await response.json();
-        setSummary(data);
+        const [summaryRes, detectionsRes, signalsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/traffic/summary`),
+          fetch(`${API_BASE_URL}/api/detections`),
+          fetch(`${API_BASE_URL}/api/signals`)
+        ]);
+        setSummary(await summaryRes.json());
+        setDetections(await detectionsRes.json());
+        setSignals(await signalsRes.json());
       } catch (error) {
         console.error(error);
       }
     }
 
-    loadSummary();
+    loadInitialData();
 
     const socket = io(API_BASE_URL, {
       transports: ['websocket']
@@ -34,6 +53,18 @@ export default function TrafficDashboard() {
 
     socket.on('connect', () => setStatus('Live data connected'));
     socket.on('disconnect', () => setStatus('Disconnected from live feed'));
+    socket.on('signalUpdate', (update) => {
+      setSignals((current) => ({
+        ...current,
+        [update.intersection]: {
+          phase: update.phase,
+          duration: update.duration
+        }
+      }));
+    });
+    socket.on('cameraDetection', (detection) => {
+      setDetections((current) => [detection, ...current].slice(0, 20));
+    });
     socket.on('trafficUpdate', (event) => {
       setHistory((current) => {
         const next = [...current, event].slice(-20);
@@ -41,7 +72,8 @@ export default function TrafficDashboard() {
         setLatestEvent({
           intersection: event.intersection,
           signalPhase: event.signalPhase,
-          congestionLevel: event.congestionLevel
+          congestionLevel: event.congestionLevel,
+          sensorType: event.sensorType || 'aggregated'
         });
 
         setSummary((previous) => ({
@@ -54,6 +86,7 @@ export default function TrafficDashboard() {
           try {
             const seqLen = 12;
             const recent = next.slice(-seqLen).map((i) => i.vehicleCount ?? 0);
+            if (recent.length < seqLen) return;
             const resp = await fetch(`${API_BASE_URL}/api/predict`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -82,6 +115,14 @@ export default function TrafficDashboard() {
       speeds: history.map((item) => item.averageSpeed),
       pollution: history.map((item) => item.pollutionIndex)
     };
+  }, [history]);
+
+  const latestByIntersection = useMemo(() => {
+    const map = {};
+    history.forEach((event) => {
+      map[event.intersection] = event;
+    });
+    return map;
   }, [history]);
 
   return (
@@ -120,9 +161,17 @@ export default function TrafficDashboard() {
           <strong>{latestEvent.congestionLevel}</strong>
         </div>
         <div className="summary-card">
-          <span className="summary-label">Forecast</span>
+          <span className="summary-label">Sensor source</span>
+          <strong>{formatSensorType(latestEvent.sensorType)}</strong>
+        </div>
+        <div className="summary-card">
+          <span className="summary-label">LSTM forecast</span>
           <strong>{forecast !== null ? formatNumber(forecast) : 'loading...'}</strong>
         </div>
+      </div>
+      <div className="panels-grid">
+        <IntersectionMap signals={signals} latestByIntersection={latestByIntersection} />
+        <CameraDetectionsPanel detections={detections} />
       </div>
       <TrafficCharts data={chartData} />
     </section>

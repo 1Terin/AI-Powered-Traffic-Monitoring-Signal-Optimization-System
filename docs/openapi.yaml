@@ -1,0 +1,129 @@
+openapi: 3.0.0
+info:
+  title: Traffic Monitoring API
+  version: 1.0.0
+  description: REST API for AI-powered traffic monitoring, forecasting, and signal control.
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /api/traffic/summary:
+    get:
+      summary: Aggregate traffic summary
+      responses:
+        '200':
+          description: Summary metrics
+  /api/traffic:
+    get:
+      summary: List recent traffic events
+      responses:
+        '200':
+          description: Traffic events
+    post:
+      summary: Ingest traffic event from authenticated device
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intersection:
+                  type: string
+                vehicleCount:
+                  type: number
+                averageSpeed:
+                  type: number
+                pollutionIndex:
+                  type: number
+                signalPhase:
+                  type: string
+                congestionLevel:
+                  type: string
+                sensorType:
+                  type: string
+      responses:
+        '201':
+          description: Created
+  /api/detections:
+    get:
+      summary: List recent PTZ camera detections
+      responses:
+        '200':
+          description: Camera detections
+  /api/signals:
+    get:
+      summary: Current signal phase states
+      responses:
+        '200':
+          description: Signal states by intersection
+    post:
+      summary: Publish a signal phase command
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intersection:
+                  type: string
+                phase:
+                  type: string
+                duration:
+                  type: integer
+      responses:
+        '200':
+          description: Command accepted
+  /api/predict:
+    post:
+      summary: Get short-term LSTM forecast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                window:
+                  type: array
+                  items:
+                    type: number
+      responses:
+        '200':
+          description: Prediction result
+        '400':
+          description: Bad request
+  /api/devices/register:
+    post:
+      summary: Register edge device and receive JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+      responses:
+        '201':
+          description: Device registered
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: Metrics payload
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

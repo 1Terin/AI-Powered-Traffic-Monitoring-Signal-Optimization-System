@@ -1,0 +1,188 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traffic-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-mongo
+  namespace: traffic-system
+spec:
+  ports:
+    - port: 27017
+  selector:
+    app: traffic-mongo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-mongo
+  namespace: traffic-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-mongo
+  template:
+    metadata:
+      labels:
+        app: traffic-mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:6.0
+          ports:
+            - containerPort: 27017
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-mqtt
+  namespace: traffic-system
+spec:
+  ports:
+    - port: 1883
+  selector:
+    app: traffic-mqtt
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-mqtt
+  namespace: traffic-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-mqtt
+  template:
+    metadata:
+      labels:
+        app: traffic-mqtt
+    spec:
+      containers:
+        - name: mqtt
+          image: eclipse-mosquitto:2.0
+          ports:
+            - containerPort: 1883
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-inference
+  namespace: traffic-system
+spec:
+  ports:
+    - port: 5001
+  selector:
+    app: traffic-inference
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-inference
+  namespace: traffic-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-inference
+  template:
+    metadata:
+      labels:
+        app: traffic-inference
+    spec:
+      containers:
+        - name: inference
+          image: traffic-inference:latest
+          ports:
+            - containerPort: 5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-backend
+  namespace: traffic-system
+spec:
+  selector:
+    app: traffic-backend
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-backend
+  namespace: traffic-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: traffic-backend
+  template:
+    metadata:
+      labels:
+        app: traffic-backend
+    spec:
+      containers:
+        - name: backend
+          image: traffic-backend:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: MONGO_URI
+              value: mongodb://traffic-mongo:27017/trafficdb
+            - name: MQTT_BROKER
+              value: mqtt://traffic-mqtt:1883
+            - name: INFERENCE_URL
+              value: http://traffic-inference:5001
+            - name: SIMULATE_SENSORS
+              value: "1"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-frontend
+  namespace: traffic-system
+spec:
+  selector:
+    app: traffic-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4173
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-frontend
+  namespace: traffic-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-frontend
+  template:
+    metadata:
+      labels:
+        app: traffic-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: traffic-frontend:latest
+          ports:
+            - containerPort: 4173
+          env:
+            - name: VITE_API_BASE_URL
+              value: http://traffic-backend:4000

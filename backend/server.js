@@ -5,6 +5,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
 const TrafficEvent = require('./src/models/TrafficEvent');
+const CameraDetection = require('./src/models/CameraDetection');
 const startMockTrafficStream = require('./src/mockDataGenerator');
 const startMqttBridge = require('./src/mqttBridge');
 const { startSimulators } = require('./src/sensorSimulators');
@@ -16,11 +17,39 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'invalid_json', message: err.message });
+  }
+  next(err);
+});
+
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:27017/trafficdb';
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
+});
+
+app.get('/api/detections', async (req, res) => {
+  const detections = await CameraDetection.find().sort({ timestamp: -1 }).limit(50);
+  res.json(detections);
+});
+
+app.get('/api/signals', (req, res) => {
+  if (mqttClient && typeof mqttClient.getSignalStates === 'function') {
+    return res.json(mqttClient.getSignalStates());
+  }
+  res.json({});
+});
+
+app.post('/api/signals', verifyDeviceToken, (req, res) => {
+  const { intersection = 'A1', phase = 'green', duration = 30 } = req.body || {};
+  if (!mqttClient || typeof mqttClient.publishSignalCommand !== 'function') {
+    return res.status(503).json({ error: 'MQTT bridge unavailable' });
+  }
+  mqttClient.publishSignalCommand(intersection, phase, duration);
+  res.json({ intersection, phase, duration });
 });
 
 app.get('/api/traffic', async (req, res) => {
@@ -53,7 +82,9 @@ app.post('/api/traffic', verifyDeviceToken, async (req, res) => {
     averageSpeed: payload.averageSpeed || 0,
     pollutionIndex: payload.pollutionIndex || 0,
     signalPhase: payload.signalPhase || 'green',
-    congestionLevel: payload.congestionLevel || 'moderate'
+    congestionLevel: payload.congestionLevel || 'moderate',
+    sensorType: payload.sensorType || 'aggregated',
+    source: 'api'
   });
 
   await event.save();
@@ -94,6 +125,11 @@ const collectDefaultMetrics = client.collectDefaultMetrics;
 collectDefaultMetrics();
 const httpRequestCounter = new client.Counter({ name: 'http_requests_total', help: 'Total HTTP requests' });
 
+app.use((req, res, next) => {
+  httpRequestCounter.inc();
+  next();
+});
+
 app.get('/metrics', async (req, res) => {
   res.set('Content-Type', client.register.contentType);
   res.end(await client.register.metrics());
@@ -105,6 +141,8 @@ io.on('connection', (socket) => {
     console.log('Client disconnected:', socket.id);
   });
 });
+
+let mqttClient = null;
 
 async function start() {
   await mongoose.connect(MONGO_URI, {
@@ -121,12 +159,12 @@ async function start() {
 
   // start MQTT bridge to accept sensor data via MQTT and publish to Socket.IO
   try {
-    startMqttBridge(io, TrafficEvent);
+    mqttClient = startMqttBridge(io, TrafficEvent);
   } catch (err) {
     console.warn('MQTT bridge failed to start', err.message || err);
   }
 
-  // optionally run local sensor simulators (publishes MQTT messages)
+  // run sensor simulators when enabled (Docker Compose sets SIMULATE_SENSORS=1)
   if (process.env.SIMULATE_SENSORS === '1') {
     startSimulators();
   }

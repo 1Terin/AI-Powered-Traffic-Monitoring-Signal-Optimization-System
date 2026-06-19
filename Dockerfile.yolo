@@ -1,0 +1,7 @@
+FROM python:3.11-slim
+WORKDIR /usr/src/app
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+RUN python -m pip install --upgrade pip && python -m pip install --no-cache-dir paho-mqtt
+COPY ml/yolo_inference_stub.py ./ml/yolo_inference_stub.py
+CMD ["python", "./ml/yolo_inference_stub.py", "--mqtt", "mqtt://mqtt:1883", "--topic", "sensors/camera/detections"]

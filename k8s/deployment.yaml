@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-backend
+  template:
+    metadata:
+      labels:
+        app: traffic-backend
+    spec:
+      containers:
+        - name: backend
+          image: registry/traffic-backend:latest
+          ports:
+            - containerPort: 4000

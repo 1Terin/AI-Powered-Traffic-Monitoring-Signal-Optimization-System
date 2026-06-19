@@ -7,7 +7,23 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ml/requirements-inference.txt
+          pip install pytest
+      - name: Run Python tests
+        run: python -m pytest -q
+
+  node-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,15 +34,15 @@ jobs:
       - name: Install backend deps
         run: |
           cd backend
-          npm ci
+          npm install
       - name: Install frontend deps
         run: |
           cd frontend
-          npm ci
-      - name: Run backend lint/test (placeholder)
-        run: |
-          echo "No tests configured"
+          npm install
+      - name: Verify backend model loads
+        run: node -e "require('./backend/src/models/TrafficEvent'); require('./backend/src/models/CameraDetection'); console.log('models ok')"
       - name: Build Docker images
         run: |
           docker build -f Dockerfile.backend -t traffic-backend:ci .
           docker build -f Dockerfile.frontend -t traffic-frontend:ci .
+          docker build -f Dockerfile.inference -t traffic-inference:ci .

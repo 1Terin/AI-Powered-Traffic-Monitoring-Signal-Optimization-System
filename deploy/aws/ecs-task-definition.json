@@ -1,0 +1,35 @@
+{
+  "family": "traffic-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "<account-id>.dkr.ecr.us-east-1.amazonaws.com/traffic-backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 4000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "4000" },
+        { "name": "MONGO_URI", "value": "mongodb://mongo-host:27017/trafficdb" },
+        { "name": "MQTT_BROKER", "value": "mqtt://mqtt-host:1883" },
+        { "name": "INFERENCE_URL", "value": "http://inference-host:5001" },
+        { "name": "SIMULATE_SENSORS", "value": "0" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/traffic-backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

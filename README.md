@@ -129,3 +129,46 @@ Notes:
 - Real Environment Vehicle Images: https://www.kaggle.com/datasets/hanif535/real-environment-vehicle-images
 - Smart Traffic Monitoring Dataset: https://www.kaggle.com/datasets/programmer3/smart-traffic-monitoring-dataset
 - Perception-Based Adaptive Traffic Management Dataset: https://rosap.ntl.bts.gov/view/dot/84510
+
+## Push Readiness Checklist
+
+Follow these steps before pushing this repository to GitHub. I will not push for you — run the commands below and push when you're ready.
+
+- **Verify ignore files:** ensure `.gitignore` and `.dockerignore` are present and committed so local secrets, environments, and large ML artifacts are not accidentally published.
+- **Run tests and linters:** in shell run the project tests where available:
+
+```bash
+# Node.js (frontend/backend) - adjust per package.json scripts
+npm --prefix backend test || true
+npm --prefix frontend test || true
+
+# Python tests (ML / data import)
+pytest -q || true
+```
+- **Untrack large files already committed (optional):** if you previously committed large model files (for example `ml/lstm_traffic_model.h5` or `yolov8n.pt`) remove them from the index without deleting the local copies:
+
+```bash
+git rm --cached ml/lstm_traffic_model.h5
+git rm --cached yolov8n.pt
+git commit -m "Remove large model files from repository (kept locally)"
+```
+
+- **Commit the readiness changes:**
+
+```bash
+git add .gitignore .dockerignore README.md
+git commit -m "chore: prepare repo for GitHub push (ignore files, README checklist)"
+```
+
+- **Push to GitHub:**
+
+```bash
+# set remote if needed
+git remote add origin <git@github.com:yourname/yourrepo.git>
+git branch -M main
+git push -u origin main
+```
+
+If you prefer to keep large artifacts, consider using Git LFS or a separate release storage and add a note in this README.
+
+**Important:** I will not perform the push — please confirm if you'd like me to run any checks or to remove large tracked files before you push. I will ask permission before taking further actions.
