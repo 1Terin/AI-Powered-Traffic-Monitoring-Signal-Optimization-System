@@ -66,3 +66,6 @@ docker-compose.override.yml
 # GitHub and attributes
 .gitattributes
 .github/
+
+lstm_traffic_model.h5
+yolov8n.pt

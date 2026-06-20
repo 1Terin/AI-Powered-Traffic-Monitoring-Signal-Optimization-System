@@ -21,7 +21,7 @@ This repository contains a scaffolded full-stack traffic monitoring system with:
    - `npm run dev:frontend`
 
 2. Start the app stack with Docker Compose:
-   - `docker compose up -d backend frontend inference`
+   - `docker compose up -d mongo mqtt inference backend frontend yolo`
    - `docker compose down`
 
 3. Start monitoring services (optional):
@@ -53,7 +53,7 @@ Quick run (local with Docker):
 
 ```bash
 # start services (Mongo, Postgres, MQTT, backend, frontend, inference) (no logs)
-docker compose up -d backend frontend inference
+docker compose up -d mongo mqtt inference backend frontend yolo
 
 # for everything (including logs)
 npm run docker:up
@@ -152,23 +152,3 @@ git rm --cached ml/lstm_traffic_model.h5
 git rm --cached yolov8n.pt
 git commit -m "Remove large model files from repository (kept locally)"
 ```
-
-- **Commit the readiness changes:**
-
-```bash
-git add .gitignore .dockerignore README.md
-git commit -m "chore: prepare repo for GitHub push (ignore files, README checklist)"
-```
-
-- **Push to GitHub:**
-
-```bash
-# set remote if needed
-git remote add origin <git@github.com:yourname/yourrepo.git>
-git branch -M main
-git push -u origin main
-```
-
-If you prefer to keep large artifacts, consider using Git LFS or a separate release storage and add a note in this README.
-
-**Important:** I will not perform the push — please confirm if you'd like me to run any checks or to remove large tracked files before you push. I will ask permission before taking further actions.
